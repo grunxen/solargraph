@@ -167,10 +167,14 @@ module Solargraph
       word
     end
 
-    def get_instance_variables_at(index)
+    def get_variables_at(index, type)
       node = parent_node_from(index, :def, :defs, :class, :module)
       ns = namespace_at(index) || ''
-      api_map.get_instance_variables(ns, (node.type == :def ? :instance : :class))
+      if type == :instance
+        api_map.get_instance_variables(ns, (node.type == :def ? :instance : :class))
+      else
+        api_map.get_class_variables(ns)
+      end
     end
 
     # Get suggestions for code completion at the specified location in the
@@ -199,8 +203,11 @@ module Solargraph
         else
           result.concat api_map.get_instance_methods(type)
         end
+      elsif signature.start_with?('@@')
+        result.concat get_variables_at(index, :class)
       elsif signature.start_with?('@')
-        result.concat get_instance_variables_at(index)
+        result.concat get_variables_at(index, :instance)
+        result.concat get_variables_at(index, :class)
       elsif phrase.start_with?('$')
         result.concat api_map.get_global_variables
       elsif phrase.include?('::')

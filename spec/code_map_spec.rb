@@ -22,6 +22,7 @@ describe Solargraph::CodeMap do
     @cvar_code = %(
       class Foo
         @cvar = ''
+        @@tcvar = ''
         def bar
           @bar = ''
         end
@@ -68,14 +69,15 @@ my_var.
 
   it "identifies position in class node" do
     code_map = Solargraph::CodeMap.new(code: @cvar_code)
-    node = code_map.node_at(93)
+    # node = code_map.node_at(93)
+    node = code_map.node_at(106)
     expect(node.type).to eq(:class)
   end
 
   it "detects class variables" do
     code_map = Solargraph::CodeMap.new(code: @cvar_code)
-    result = code_map.suggest_at(93)
-    expect(result.map(&:to_s)).to include('@cvar')
+    result = code_map.suggest_at(114)
+    expect(result.map(&:to_s)).to include('@cvar', '@@tcvar')
     expect(result.map(&:to_s)).not_to include('@bar')
   end
 
@@ -132,7 +134,7 @@ my_var.
 
   it "infers the type of an instance variable" do
     code_map = Solargraph::CodeMap.new(code: @cvar_code)
-    sugg = code_map.resolve_object_at(63)
+    sugg = code_map.resolve_object_at(84)
     expect(sugg.length).to eq(1)
     expect(sugg[0].path).to eq('String')
   end

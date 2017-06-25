@@ -221,15 +221,18 @@ module Solargraph
       nodes = get_namespace_nodes(namespace) || @file_nodes.values
       arr = []
       nodes.each { |n|
-        arr += inner_get_instance_variables(n, scope)
+        arr += inner_get_variables(n, scope, :ivar)
       }
       arr
     end
 
-    def get_class_variables(namespace, scope = :class)
-      nodes = get_namespace_nodes(namespace)
-      vars = []
-      
+    def get_class_variables(namespace)
+      nodes = get_namespace_nodes(namespace) || @file_nodes.values
+      arr = []
+      nodes.each { |n|
+        arr += inner_get_variables(n, :instance,:cvar)
+      }
+      arr
     end
 
     def find_parent(node, *types)
@@ -265,16 +268,24 @@ module Solargraph
       @yardoc_files.include?(file)
     end
 
-    def inner_get_instance_variables(node, scope)
+    def inner_get_variables(node, scope, var_type)
       arr = []
       if node.kind_of?(AST::Node)
         node.children.each { |c|
           if c.kind_of?(AST::Node)
-            is_inst = !find_parent(c, :def).nil?
-            if c.type == :ivasgn and c.children[0] and ( (scope == :instance and is_inst) or (scope != :instance and !is_inst) )
-              arr.push Suggestion.new(c.children[0], kind: Suggestion::VARIABLE, documentation: get_comment_for(c))
+            if var_type == :ivar
+              is_inst = !find_parent(c, :def).nil?
+              if c.type == :ivasgn and c.children[0] and ( (scope == :instance and is_inst) or (scope != :instance and !is_inst) )
+                arr.push Suggestion.new(c.children[0], kind: Suggestion::VARIABLE, documentation: get_comment_for(c))
+              end
+            elsif var_type == :cvar
+              is_inst = !find_parent(c, :defs, :def, :class, :module).nil?
+              if c.type == :cvasgn and c.children[0] and ( (scope == :instance and is_inst) or (scope != :instance and !is_inst) )
+                arr.push Suggestion.new(c.children[0], kind: Suggestion::VARIABLE, documentation: get_comment_for(c))
+              end
             end
-            arr += inner_get_instance_variables(c, scope) unless [:class, :module].include?(c.type)
+
+            arr += inner_get_variables(c, scope, var_type) unless [:class, :module].include?(c.type)
           end
         }
       end
@@ -604,7 +615,8 @@ module Solargraph
     def mappable?(node)
       return true if node.kind_of?(AST::Node) and [:array, :hash, :str, :int, :float].include?(node.type)
       # TODO Add node.type :casgn (constant assignment)
-      if node.kind_of?(AST::Node) and (node.type == :class or node.type == :module or node.type == :def or node.type == :defs or node.type == :ivasgn or node.type == :gvasgn or node.type == :lvasgn or node.type == :or_asgn or node.type == :const or node.type == :lvar or node.type == :args or node.type == :kwargs)
+      types = [:class, :module, :def, :defs, :ivasgn, :gvasgn, :lvasgn, :cvasgn, :or_asgn, :const, :lvar, :args, :kwargs]
+      if node.kind_of?(AST::Node) and types.include?(node.type)
         true
       elsif node.kind_of?(AST::Node) and node.type == :send and node.children[0] == nil and MAPPABLE_METHODS.include?(node.children[1])
         true
@@ -653,7 +665,7 @@ module Solargraph
       elsif node.type == :module
         children += node.children[0, 1]
         children += get_mappable_nodes(node.children[1..-1], comment_hash)
-      elsif node.type == :ivasgn or node.type == :gvasgn or node.type == :lvasgn
+      elsif [:ivasgn, :gvasgn, :lvasgn, :cvasgn].include?(node.type)
         children += node.children
       elsif node.type == :send and node.children[1] == :include
         children += node.children[0,3]

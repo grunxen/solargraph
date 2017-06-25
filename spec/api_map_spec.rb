@@ -21,9 +21,11 @@ describe Solargraph::ApiMap do
 
         def bar
           @bar ||= 'bar'
+          @@def_cls = 'cls'
         end
         def self.baz
           @baz = 'baz'
+          @@defs_cls = 's'
         end
         def bing
           if x == y
@@ -74,7 +76,7 @@ describe Solargraph::ApiMap do
 
   it "finds class variables" do
     vars = @api_map.get_class_variables("Class1")
-    expect(vars.map(&:to_s)).to include('@@cls_var')
+    expect(vars.map(&:to_s)).to include('@@cls_var', '@@def_cls', '@@defs_cls')
   end
 
   it "finds class instance variables" do

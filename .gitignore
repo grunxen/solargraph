@@ -3,5 +3,6 @@ Gemfile.lock
 .idea
 .vscode
 .yardoc
+.yardopts
 doc
 coverage

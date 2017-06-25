@@ -16,6 +16,9 @@ describe Solargraph::ApiMap do
         attr_accessor :access_foo
         attr_reader :read_foo
         attr_writer :write_foo
+
+        @@cls_var = 1
+
         def bar
           @bar ||= 'bar'
         end
@@ -67,6 +70,11 @@ describe Solargraph::ApiMap do
   it "finds instance variables inside blocks" do
     vars = @api_map.get_instance_variables("Class1")
     expect(vars.map(&:to_s)).to include('@bing')
+  end
+
+  it "finds class variables" do
+    vars = @api_map.get_class_variables("Class1")
+    expect(vars.map(&:to_s)).to include('@@cls_var')
   end
 
   it "finds class instance variables" do

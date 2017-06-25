@@ -226,6 +226,12 @@ module Solargraph
       arr
     end
 
+    def get_class_variables(namespace, scope = :class)
+      nodes = get_namespace_nodes(namespace)
+      vars = []
+      
+    end
+
     def find_parent(node, *types)
       parents = @parent_stack[node]
       parents.each { |p|

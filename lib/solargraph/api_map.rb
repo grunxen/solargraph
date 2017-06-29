@@ -5,6 +5,8 @@ require 'yaml'
 
 module Solargraph
   class ApiMap
+    autoload :Config, 'solargraph/api_map/config'
+
     KEYWORDS = [
       '__ENCODING__', '__LINE__', '__FILE__', 'BEGIN', 'END', 'alias', 'and',
       'begin', 'break', 'case', 'class', 'def', 'defined?', 'do', 'else',
@@ -26,20 +28,11 @@ module Solargraph
       @workspace = workspace.gsub(/\\/, '/') unless workspace.nil?
       clear
       unless @workspace.nil?
-        extra = File.join(@workspace, '.solargraph')
-        if File.exist?(extra)
-          append_file(extra)
-        end
-        files = []
-        opts = yard_options
-        (opts[:include] - opts[:exclude]).each { |glob|
-          files += Dir[File.join @workspace, glob]
-        }
-        opts[:exclude].each { |glob|
-          files -= Dir[File.join @workspace, glob]
-        }
-        files.uniq.each { |f|
-          append_file f if File.file?(f)
+        config = ApiMap::Config.new(@workspace)
+        config.included.each { |f|
+          unless config.excluded.include?(f)
+            append_file f
+          end
         }
       end
     end
@@ -62,8 +55,13 @@ module Solargraph
     end
 
     def append_source text, filename = nil
-      node, comments = Parser::CurrentRuby.parse_with_comments(text)
-      append_node(node, comments, filename)
+      begin
+        node, comments = Parser::CurrentRuby.parse_with_comments(text)
+        append_node(node, comments, filename)
+      rescue Parser::SyntaxError => e
+        STDERR.puts "Error parsing '#{filename}': #{e.message}"
+        nil
+      end
     end
 
     def append_node node, comments, filename = nil
@@ -82,11 +80,23 @@ module Solargraph
       yard_hash = {}
       comment_hash.each_pair { |k, v|
         ctxt = ''
+        num = nil
+        started = false
         v.each { |l|
-          ctxt += l.text.gsub(/^# /, '') + "\n"
+          # Trim the comment and minimum leading whitespace
+          p = l.text.gsub(/^#/, '')
+          if num.nil? and !p.strip.empty?
+            num = p.index(/[^ ]/)
+            started = true
+          elsif started and !p.strip.empty?
+            cur = p.index(/[^ ]/)
+            num = cur if cur < num
+          end
+          if started
+            ctxt += "#{p[num..-1]}\n"
+          end
         }
-        parser = YARD::DocstringParser.new
-        yard_hash[k] = parser.parse(ctxt).to_docstring
+        yard_hash[k] = YARD::Docstring.parser.parse(ctxt).to_docstring
       }
       yard_hash
     end
@@ -405,7 +415,6 @@ module Solargraph
       }
       return args if list.nil?
       list.children.each { |c|
-        STDERR.puts "Args child is #{c.type}"
         if c.type == :arg
           args.push c.children[0]
         elsif c.type == :optarg
@@ -480,7 +489,7 @@ module Solargraph
       if workspace.nil?
         STDERR.puts "No workspace specified for yardoc update."
       else
-        Thread.new {
+        Thread.new do
           Dir.chdir(workspace) do
             STDERR.puts "Updating the yardoc for #{workspace}..."
             cmd = "yardoc -e #{Solargraph::YARD_EXTENSION_FILE}"
@@ -490,7 +499,7 @@ module Solargraph
               STDERR.puts "There was an error processing the workspace yardoc."
             end
           end
-        }
+        end
       end
     end
 
@@ -563,6 +572,9 @@ module Solargraph
               # TODO: Determine the current scope so we can decide whether to
               # exclude protected or private methods. Right now we're just
               # assuming public only
+              elsif c.kind_of?(AST::Node) and c.type == :send and c.children[1] == :include
+                fqmod = find_fully_qualified_namespace(const_from(c.children[2]), root)
+                meths += get_instance_methods(fqmod) unless fqmod.nil? or skip.include?(fqmod)
               elsif current_scope == :public
                 if c.kind_of?(AST::Node) and c.type == :def
                   cmnt = get_comment_for(c)

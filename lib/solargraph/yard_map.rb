@@ -37,10 +37,16 @@ module Solargraph
     end
 
     def load_yardoc y
-      if y.kind_of?(Array)
-        YARD::Registry.load y, true
-      else
-        YARD::Registry.load! y
+      begin
+        if y.kind_of?(Array)
+          YARD::Registry.load y, true
+        else
+          YARD::Registry.load! y
+        end
+      rescue Exception => e
+        STDERR.puts "Error loading yardoc '#{y}' #{e.class} #{e.message}"
+        yardocs.delete y
+        nil
       end
     end
 

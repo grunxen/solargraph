@@ -227,22 +227,36 @@ module Solargraph
       @namespace_map[fqns] || []
     end
 
-    def get_instance_variables(namespace, scope = :instance)
+    # def get_instance_variables(namespace, scope = :instance)
+    #   nodes = get_namespace_nodes(namespace) || @file_nodes.values
+    #   arr = []
+    #   nodes.each { |n|
+    #     arr += inner_get_variables(n, scope, :ivar)
+    #   }
+    #   arr
+    # end
+
+    # def get_class_variables(namespace)
+    #   nodes = get_namespace_nodes(namespace) || @file_nodes.values
+    #   arr = []
+    #   nodes.each { |n|
+    #     arr += inner_get_variables(n, :instance,:cvar)
+    #   }
+    #   arr
+    # end
+
+    def get_namespace_variables(namespace, *types)
       nodes = get_namespace_nodes(namespace) || @file_nodes.values
       arr = []
       nodes.each { |n|
-        arr += inner_get_variables(n, scope, :ivar)
+        arr += namespace_vars(n, *types)
       }
       arr
     end
 
-    def get_class_variables(namespace)
-      nodes = get_namespace_nodes(namespace) || @file_nodes.values
-      arr = []
-      nodes.each { |n|
-        arr += inner_get_variables(n, :instance,:cvar)
-      }
-      arr
+    def namespace_vars(node, *types)
+      proc = Processors::VariableList.new(node, *types)
+      proc.vars
     end
 
     def find_parent(node, *types)
@@ -279,27 +293,29 @@ module Solargraph
     end
 
     def inner_get_variables(node, scope, var_type)
-      arr = []
-      if node.kind_of?(AST::Node)
-        node.children.each { |c|
-          if c.kind_of?(AST::Node)
-            if var_type == :ivar
-              is_inst = !find_parent(c, :def).nil?
-              if c.type == :ivasgn and c.children[0] and ( (scope == :instance and is_inst) or (scope != :instance and !is_inst) )
-                arr.push Suggestion.new(c.children[0], kind: Suggestion::VARIABLE, documentation: get_comment_for(c))
-              end
-            elsif var_type == :cvar
-              is_inst = !find_parent(c, :defs, :def, :class, :module).nil?
-              if c.type == :cvasgn and c.children[0] and ( (scope == :instance and is_inst) or (scope != :instance and !is_inst) )
-                arr.push Suggestion.new(c.children[0], kind: Suggestion::VARIABLE, documentation: get_comment_for(c))
-              end
-            end
+      # arr = []
+      # if node.kind_of?(AST::Node)
+      #   node.children.each { |c|
+      #     if c.kind_of?(AST::Node)
+      #       if var_type == :ivar
+      #         is_inst = !find_parent(c, :def).nil?
+      #         if c.type == :ivasgn and c.children[0] and ( (scope == :instance and is_inst) or (scope != :instance and !is_inst) )
+      #           arr.push Suggestion.new(c.children[0], kind: Suggestion::VARIABLE, documentation: get_comment_for(c))
+      #         end
+      #       elsif var_type == :cvar
+      #         is_inst = !find_parent(c, :defs, :def, :class, :module).nil?
+      #         if c.type == :cvasgn and c.children[0] and ( (scope == :instance and is_inst) or (scope != :instance and !is_inst) )
+      #           arr.push Suggestion.new(c.children[0], kind: Suggestion::VARIABLE, documentation: get_comment_for(c))
+      #         end
+      #       end
 
-            arr += inner_get_variables(c, scope, var_type) unless [:class, :module].include?(c.type)
-          end
-        }
-      end
-      arr
+      #       arr += inner_get_variables(c, scope, var_type) unless [:class, :module].include?(c.type)
+      #     end
+      #   }
+      # end
+      # arr
+      proc = Processors::VariableList.new(node, :ivar)
+      proc.vars
     end
 
     def infer_instance_variable(var, namespace, scope = :instance)
@@ -641,7 +657,7 @@ module Solargraph
       return node unless node.kind_of?(AST::Node)
       mappable = get_mappable_nodes(node.children, comment_hash)
       result = node.updated nil, mappable
-      result
+      node
     end
     
     def get_mappable_nodes arr, comment_hash

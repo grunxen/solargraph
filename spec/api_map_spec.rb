@@ -19,7 +19,6 @@ describe Solargraph::ApiMap do
 
         @@cls_var = 1
 
-        # comment
         def bar
           @bar ||= 'bar'
           @@def_cls = 'cls'
@@ -65,23 +64,23 @@ describe Solargraph::ApiMap do
   end
 
   it "finds instance variables" do
-    vars = @api_map.get_namespace_variables("Class1", :ivar)
+    vars = @api_map.get_instance_variables("Class1")
     expect(vars.map(&:to_s)).to include('@bar')
     expect(vars.map(&:to_s)).not_to include('@baz')
   end
 
   it "finds instance variables inside blocks" do
-    vars = @api_map.get_namespace_variables("Class1", :ivar)
+    vars = @api_map.get_instance_variables("Class1")
     expect(vars.map(&:to_s)).to include('@bing')
   end
 
   it "finds class variables" do
-    vars = @api_map.get_namespace_variables("Class1", :cvar)
+    vars = @api_map.get_class_variables("Class1")
     expect(vars.map(&:to_s)).to include('@@cls_var', '@@def_cls', '@@defs_cls')
   end
 
   it "finds class instance variables" do
-    vars = @api_map.get_namespace_variables("Class1", :civar)
+    vars = @api_map.get_instance_variables("Class1", :class)
     expect(vars.map(&:to_s)).to include('@baz')
     expect(vars.map(&:to_s)).not_to include('@bar')
   end

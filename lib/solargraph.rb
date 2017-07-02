@@ -15,6 +15,9 @@ module Solargraph
   autoload :Mapper,      'solargraph/mapper'
   autoload :Server,      'solargraph/server'
   autoload :YardMap,     'solargraph/yard_map'
+  
+  require 'solargraph/processors/before_runner'
+  require 'solargraph/processors/namespace_builder'
   require 'solargraph/processors/variable_list'
   require 'solargraph/processors/mappable_methods'
   require 'solargraph/processors/api_map_preprocessor'

@@ -2,8 +2,8 @@ require 'parser'
 
 module Solargraph
   module Processors
-  
     class ApiMapPreprocessor < Parser::AST::Processor
+      include NamespaceBuilder
 
       def initialize(node)
         @required = []
@@ -12,13 +12,9 @@ module Solargraph
         @namespace_holders_stack = []
         process(node)
       end
-
-      def on_send(node)
-        # send "map_#{}"
-      end
-
+      
       def add_const(node, holder)
-        namespace = const_namespace(node)
+        namespace = const_name(node)
         if namespace.start_with?('::') # global namespace, insert without '::'
           namespace[0, 2] = ''
         else
@@ -50,20 +46,6 @@ module Solargraph
           @namespaces = hash
         end
         @namespaces
-      end
-
-      private
-
-      def const_namespace(node)
-        if node.nil?
-          ''
-        elsif node.type == :cbase
-          '::'
-        elsif node.type == :const
-          const_namespace(node.children[0]) + node.children[1].to_s
-        else
-          ''
-        end
       end
     end
   end

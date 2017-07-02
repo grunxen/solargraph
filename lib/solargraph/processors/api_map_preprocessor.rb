@@ -47,6 +47,14 @@ module Solargraph
         end
         @namespaces
       end
+
+      def on_def(node)
+        node
+      end
+
+      def on_defs(node)
+        node
+      end
     end
   end
 end

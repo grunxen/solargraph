@@ -657,7 +657,7 @@ module Solargraph
       result = node.updated nil, mappable
       result
     end
-    
+
     def get_mappable_nodes arr, comment_hash
       result = []
       arr.each { |n|
@@ -671,7 +671,7 @@ module Solargraph
       }
       result
     end
-    
+
     def minify node, comment_hash
       return node if node.type == :args
       type = node.type

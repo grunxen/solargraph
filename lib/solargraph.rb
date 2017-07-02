@@ -7,6 +7,7 @@ module Solargraph
   autoload :Shell,       'solargraph/shell'
   autoload :LiveParser,  'solargraph/live_parser'
   autoload :ApiMap,      'solargraph/api_map'
+  autoload :ApiMap2,     'solargraph/api_map2'
   autoload :CodeMap,     'solargraph/code_map'
   autoload :NodeMethods, 'solargraph/node_methods'
   autoload :Suggestion,  'solargraph/suggestion'
@@ -15,6 +16,8 @@ module Solargraph
   autoload :Server,      'solargraph/server'
   autoload :YardMap,     'solargraph/yard_map'
   require 'solargraph/processors/variable_list'
+  require 'solargraph/processors/mappable_methods'
+  require 'solargraph/processors/api_map_preprocessor'
 
   YARDOC_PATH = File.join(File.realpath(File.dirname(__FILE__)), '..', 'yardoc')
   YARD_EXTENSION_FILE = File.join(File.realpath(File.dirname(__FILE__)), 'yard-solargraph.rb')

@@ -15,9 +15,7 @@ module Solargraph
         'then', 'true', 'undef', 'unless', 'until', 'when', 'while', 'yield'
     ]
 
-    MAPPABLE_METHODS = [
-        :include, :extend, :require, :autoload, :attr_reader, :attr_writer, :attr_accessor, :private, :public, :protected
-    ]
+
 
     include NodeMethods
 
@@ -66,10 +64,7 @@ module Solargraph
 
     def append_node node, comments, filename = nil
       @file_comments[filename] = associate_comments(node, comments)
-      mapified = reduce(node, @file_comments[filename])
-      root = AST::Node.new(:begin, [filename])
-      root = root.append mapified
-      @file_nodes[filename] = root
+      @file_nodes[filename] = node
       @required.uniq!
       process_maps
       root
@@ -633,73 +628,6 @@ module Solargraph
       else
         false
       end
-    end
-
-    def reduce node, comment_hash
-      return node unless node.kind_of?(AST::Node)
-      mappable = get_mappable_nodes(node.children, comment_hash)
-      result = node.updated nil, mappable
-      node
-    end
-
-    def get_mappable_nodes arr, comment_hash
-      result = []
-      arr.each { |n|
-        if mappable?(n)
-          min = minify(n, comment_hash)
-          result.push min
-        else
-          next unless n.kind_of?(AST::Node)
-          result += get_mappable_nodes(n.children, comment_hash)
-        end
-      }
-      result
-    end
-
-    def minify node, comment_hash
-      return node if node.type == :args
-      type = node.type
-      children = []
-      if node.type == :class
-        children += node.children[0, 2]
-        children += get_mappable_nodes(node.children[2..-1], comment_hash)
-        #children += get_mappable_nodes(node.children, comment_hash)
-      elsif node.type == :const or node.type == :args or node.type == :kwargs
-        children += node.children
-      elsif node.type == :def
-        children += node.children[0, 2]
-        children += get_mappable_nodes(node.children[2..-1], comment_hash)
-      elsif node.type == :defs
-        children += node.children[0, 3]
-        children += get_mappable_nodes(node.children[3..-1], comment_hash)
-      elsif node.type == :module
-        children += node.children[0, 1]
-        children += get_mappable_nodes(node.children[1..-1], comment_hash)
-      elsif [:ivasgn, :gvasgn, :lvasgn, :cvasgn].include?(node.type)
-        children += node.children
-      elsif node.type == :send and node.children[1] == :include
-        children += node.children[0,3]
-      elsif node.type == :send and node.children[1] == :require
-        if node.children[2].children[0].kind_of?(String)
-          path = node.children[2].children[0].to_s
-          @required.push(path) unless local_path?(path)
-        end
-        children += node.children[0, 3]
-      elsif node.type == :send and node.children[1] == :autoload
-        @required.push(node.children[3].children[0]) if node.children[3].children[0].kind_of?(String)
-        type = :require
-        children += node.children[1, 3]
-      elsif node.type == :send or node.type == :lvar
-        children += node.children
-      elsif node.type == :or_asgn
-        # TODO: The api_map should ignore local variables.
-        type = node.children[0].type
-        children.push node.children[0].children[0], node.children[1]
-      elsif [:array, :hash, :str, :int, :float].include?(node.type)
-        # @todo Do we really care about the details?
-      end
-      result = node.updated(type, children)
-      result
     end
 
     def local_path? path

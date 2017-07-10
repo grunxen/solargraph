@@ -6,13 +6,12 @@ module Solargraph
       include NamespaceBuilder
 
       def initialize(node)
-        @required = []
         @namespaces_stack = []
         @namespaces = []
         @namespace_holders_stack = []
         process(node)
       end
-      
+
       def add_const(node, holder)
         namespace = const_name(node)
         if namespace.start_with?('::') # global namespace, insert without '::'
@@ -20,7 +19,7 @@ module Solargraph
         else
           prev_namespace = @namespaces_stack.last.to_s
           prev_namespace += '::' if prev_namespace != ''
-          namespace.insert(0,  prev_namespace)
+          namespace.insert(0, prev_namespace)
         end
         @namespaces_stack << namespace
         @namespaces << [namespace, @namespace_holders_stack.last]

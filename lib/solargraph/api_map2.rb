@@ -4,7 +4,7 @@ require 'yard'
 require 'yaml'
 
 module Solargraph
-  class ApiMap
+  class ApiMap2
     autoload :Config, 'solargraph/api_map/config'
 
     KEYWORDS = [
@@ -61,8 +61,7 @@ module Solargraph
     def append_node(node, comments, filename = '(source)')
       @file_comments[filename] = associate_comments(node, comments)
       @file_nodes[filename] = node
-      process_maps(filename)
-      root
+      build_namespaces(node, filename)
     end
 
     def associate_comments(node, comments)
@@ -92,7 +91,7 @@ module Solargraph
     end
 
     def build_namespaces(node, filename)
-      namespaces = ApiMapPreprocessor.new(node).namespaces
+      namespaces = Solargraph::Processors::ApiMapPreprocessor.new(node).namespaces
       namespaces.each do |namespace, node|
         if @namespaces[namespace].nil?
           @namespaces[namespace] = {}
@@ -102,10 +101,30 @@ module Solargraph
       end
     end
 
-    def get_comment_for node
+    def namespaces_in(name)
+      namespaces = []
+      if name == '' # root namespace
+        namespaces = @namespaces.keys.select { |n| !n.include?"::" }
+      else
+        @namespaces.each do |namespace, _|
+          if namespace.start_with?(name)
+            inner_namespace = namespace.split("::")[1]
+            namespaces.push(inner_namespace) if inner_namespace
+          end
+        end
+      end
+      namespaces
+    end
+
+    def get_comment_for(node)
       filename = get_filename_for(node)
       return nil if @file_comments[filename].nil?
       @file_comments[filename][node.loc]
+    end
+
+    def get_filename_for(node)
+      root = get_root_for(node)
+      root.nil? ? nil : root.children[0]
     end
   end
 end

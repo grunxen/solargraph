@@ -21,7 +21,7 @@ module Solargraph
   require 'solargraph/processors/variable_list'
   require 'solargraph/processors/mappable_methods'
   require 'solargraph/processors/api_map_preprocessor'
-  # require 'solargraph/api_map2'
+  require 'solargraph/api_map2'
 
   YARDOC_PATH = File.join(File.realpath(File.dirname(__FILE__)), '..', 'yardoc')
   YARD_EXTENSION_FILE = File.join(File.realpath(File.dirname(__FILE__)), 'yard-solargraph.rb')

@@ -1,44 +1,44 @@
-# describe Solargraph::ApiMap2 do
-#   before :each do
-#     code = %(
-#       module Module1
-#         class Module1Class
-#           class Module1Class2
-#           end
-#           def module1class_method
-#           end
-#         end
-#         def module1_method
-#         end
-#       end
-#       class Class1
-#         include Module1
-#         attr_accessor :access_foo
-#         attr_reader :read_foo
-#         attr_writer :write_foo
+describe Solargraph::ApiMap2 do
+  before :each do
+    code = %(
+      module Module1
+        class Module1Class
+          class Module1Class2
+          end
+          def module1class_method
+          end
+        end
+        def module1_method
+        end
+      end
+      class Class1
+        include Module1
+        attr_accessor :access_foo
+        attr_reader :read_foo
+        attr_writer :write_foo
 
-#         @@cls_var = 1
+        @@cls_var = 1
 
-#         def bar
-#           @bar ||= 'bar'
-#           @@def_cls = 'cls'
-#         end
-#         def self.baz
-#           @baz = 'baz'
-#           @@defs_cls = 's'
-#         end
-#         def bing
-#           if x == y
-#             @bing = z
-#           end
-#         end
-#       end
-#       class Class2 < Class1
-#       end
-#     )
-#     @api_map = Solargraph::ApiMap.new
-#     @api_map.append_source(code, 'file.rb')
-#   end
+        def bar
+          @bar ||= 'bar'
+          @@def_cls = 'cls'
+        end
+        def self.baz
+          @baz = 'baz'
+          @@defs_cls = 's'
+        end
+        def bing
+          if x == y
+            @bing = z
+          end
+        end
+      end
+      class Class2 < Class1
+      end
+    )
+    @api_map = Solargraph::ApiMap2.new
+    @api_map.append_source(code, 'file.rb')
+  end
 
 #   it "finds instance methods" do
 #     methods = @api_map.get_instance_methods("Class1")
@@ -103,25 +103,26 @@
 #     expect(methods.map(&:to_s)).to include('access_foo=')
 #   end
 
-#   it "finds root namespaces" do
-#     namespaces = @api_map.namespaces_in('')
-#     expect(namespaces.map(&:to_s)).to include("Class1")
-#   end
+  it "finds root namespaces" do
+    namespaces = @api_map.namespaces_in('')
+    expect(namespaces.map(&:to_s)).to include("Class1")
+  end
 
-#   it "finds included namespaces" do
-#     namespaces = @api_map.namespaces_in('Class1')
-#     expect(namespaces.map(&:to_s)).to include('Module1Class')
-#   end
+  # not process include function
+  # it "finds included namespaces" do
+  #   namespaces = @api_map.namespaces_in('Class1')
+  #   expect(namespaces.map(&:to_s)).to include('Module1Class')
+  # end
 
-#   it "finds namespaces within namespaces" do
-#     namespaces = @api_map.namespaces_in('Module1')
-#     expect(namespaces.map(&:to_s)).to include('Module1Class')
-#   end
+  it "finds namespaces within namespaces" do
+    namespaces = @api_map.namespaces_in('Module1')
+    expect(namespaces.map(&:to_s)).to include('Module1Class')
+  end
 
-#   it "excludes namespaces outside of scope" do
-#     namespaces = @api_map.namespaces_in('')
-#     expect(namespaces.map(&:to_s)).not_to include('Module1Class')
-#   end
+  it "excludes namespaces outside of scope" do
+    namespaces = @api_map.namespaces_in('')
+    expect(namespaces.map(&:to_s)).not_to include('Module1Class')
+  end
 
 #   it "finds instance variables in scoped classes" do
 #     methods = @api_map.get_instance_methods('Module1Class', 'Module1')
@@ -164,4 +165,4 @@
 #     cls = @api_map.infer_signature_type('String.new', '', scope: :class)
 #     expect(cls).to eq('String')
 #   end
-# end
+end
